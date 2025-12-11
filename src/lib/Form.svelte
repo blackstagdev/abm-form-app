@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 
 	let form = $state({
 		firstName: '',
@@ -63,7 +64,7 @@
 	async function loadAffiliates() {
 		try {
 			const res = await fetch(
-				'https://api.goaffpro.com/v1/admin/affiliates?fields=id,name,ref_code',
+				'https://api.goaffpro.com/v1/admin/affiliates?status=approved&fields=id,name,first_name,last_name,ref_code',
 				{
 					headers: {
 						'X-GOAFFPRO-ACCESS-TOKEN':
@@ -85,6 +86,13 @@
 
 	$effect(() => {
 		filteredList = affiliateList.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()));
+	});
+
+	$effect(() => {
+		const ref = $page.url.searchParams.get('ref');
+		if (ref) {
+			form.referredBy = ref;
+		}
 	});
 
 	function selectReferrer(a) {
@@ -287,13 +295,13 @@
 		</div>
 
 		<div>
-			<label class="required">Referred by someone?</label>
+			<label for="referredbySomeone" class="required">Referred by someone?</label>
 
 			<button type="button" class="select-box" onclick={() => (open = !open)}>
 				{#if form.referredBy}
 					{#each affiliateList as a}
 						{#if a.ref_code === form.referredBy}
-							{a.name}
+							{a.first_name} {a.last_name}
 						{/if}
 					{/each}
 				{:else}
