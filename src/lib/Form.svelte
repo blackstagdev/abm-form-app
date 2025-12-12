@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import { supabase } from '$lib/supabaseClient';
 
 	let form = $state({
 		firstName: '',
@@ -28,7 +29,29 @@
 		agree: false
 	});
 
-	$inspect(form);
+	const isValidNPI = (npi) => /^\d{10}$/.test(npi);
+	const isValidEIN = (ein) => /^(\d{2}-\d{7}|\d{9})$/.test(ein);
+	const isValidUSPhone = (phone) => /^\+?1?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(phone);
+
+	const isFormValid = () => {
+		return (
+			form.firstName &&
+			form.lastName &&
+			form.email &&
+			isValidUSPhone(form.phone) &&
+			form.companyName &&
+			form.website &&
+			isValidEIN(form.taxId) &&
+			isValidNPI(form.npi) &&
+			form.address &&
+			form.city &&
+			form.state &&
+			form.zip &&
+			form.agree &&
+			(form.hasResellerLicense !== 'yes' || form.resellerPermit) &&
+			form.resellerCertificate
+		);
+	};
 
 	function handleFileUpload(e, field) {
 		const file = e.target.files?.[0];
@@ -37,20 +60,94 @@
 		}
 	}
 
-	function submitForm() {
-		const fd = new FormData();
+	// function submitForm() {
+	// 	const fd = new FormData();
 
-		Object.entries(form).forEach(([key, value]) => {
-			fd.append(key, value ?? '');
+	// 	Object.entries(form).forEach(([key, value]) => {
+	// 		fd.append(key, value ?? '');
+	// 	});
+
+	// 	fetch('/api/provider-intake', {
+	// 		method: 'POST',
+	// 		body: fd
+	// 	})
+	// 		.then((r) => r.json())
+	// 		.then((data) => console.log('Submitted:', data))
+	// 		.catch(console.error);
+	// }
+
+	async function uploadFile(file, folder) {
+		const filePath = `${folder}/${crypto.randomUUID()}-${file.name}`;
+
+		const { error } = await supabase.storage.from('provider-files').upload(filePath, file, {
+			upsert: true
 		});
 
-		fetch('/api/provider-intake', {
-			method: 'POST',
-			body: fd
-		})
-			.then((r) => r.json())
-			.then((data) => console.log('Submitted:', data))
-			.catch(console.error);
+		if (error) throw error;
+
+		// 👇 THIS is the key change
+		const { data } = supabase.storage.from('provider-files').getPublicUrl(filePath);
+
+		return data.publicUrl;
+	}
+
+	async function submitForm() {
+		try {
+			let resellerCertificateUrl = null;
+			let proofOfBusinessUrl = null;
+
+			if (form.resellerCertificate) {
+				resellerCertificateUrl = await uploadFile(
+					form.resellerCertificate,
+					'reseller-certificates'
+				);
+			}
+
+			if (form.proofOfBusiness) {
+				proofOfBusinessUrl = await uploadFile(form.proofOfBusiness, 'proof-of-business');
+			}
+
+			const { error } = await supabase.from('provider_intake').insert({
+				first_name: form.firstName,
+				last_name: form.lastName,
+				suffix: form.suffix || null,
+				email: form.email,
+				phone: form.phone,
+
+				company_name: form.companyName,
+				business_type: form.businessType,
+				website: form.website || null,
+				tax_id: form.taxId || null,
+				npi: form.npi || null,
+
+				npi_matches_contact: form.npiMatchesContact,
+				npi_agree_matches_contact: form.npiAgreeMatchesContact,
+
+				has_reseller_license: form.hasResellerLicense,
+				reseller_permit: form.resellerPermit || null,
+
+				// 👇 URLs stored directly
+				reseller_certificate_path: resellerCertificateUrl,
+				proof_of_business_path: proofOfBusinessUrl,
+
+				address: form.address,
+				city: form.city,
+				state: form.state,
+				zip: form.zip,
+
+				referred_by: form.referredBy || null,
+				notes: form.notes || null,
+
+				agree: form.agree
+			});
+
+			if (error) throw error;
+
+			alert('Form submitted successfully!');
+		} catch (err) {
+			console.error(err);
+			alert('Submission failed. Check console.');
+		}
 	}
 
 	let affiliateList = $state([]);
@@ -141,7 +238,18 @@
 
 				<div class="w-full">
 					<label for="phone" class="required">Phone</label>
-					<input id="phone" type="tel" bind:value={form.phone} required class="input w-full" />
+					<input
+						id="phone"
+						type="tel"
+						bind:value={form.phone}
+						required
+						class="input w-full"
+						placeholder="(555) 123-4567"
+					/>
+
+					{#if form.phone && !isValidUSPhone(form.phone)}
+						<p class="text-sm text-red-600 mt-1">Please enter a valid US mobile number.</p>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -152,7 +260,7 @@
 		<h2 class="section-title">Business Profile</h2>
 
 		<div class="grid gap-6">
-			<div class="flex gap-4">
+			<div class="flex flex-col sm:flex-row gap-4">
 				<div class="w-full">
 					<label for="companyName" class="required">Company Name</label>
 					<input id="companyName" bind:value={form.companyName} required class="input" />
@@ -167,7 +275,7 @@
 				</div>
 			</div>
 
-			<div class="flex gap-4">
+			<div class="flex gap-4 flex-col sm:flex-row">
 				<div class="w-full">
 					<label for="website" class="required">Website</label>
 					<input id="website" bind:value={form.website} required class="input" />
@@ -175,14 +283,40 @@
 
 				<div class="w-full">
 					<label for="taxId" class="required">Tax ID / EIN</label>
-					<input id="taxId" bind:value={form.taxId} required class="input" />
+					<input
+						id="taxId"
+						bind:value={form.taxId}
+						required
+						placeholder="12-3456789"
+						class="input"
+					/>
+
+					{#if form.taxId && !isValidEIN(form.taxId)}
+						<p class="text-sm text-red-600 mt-1">
+							Enter a valid 9-digit Tax ID (e.g., 12-3456789 or 123456789).
+						</p>
+					{/if}
 				</div>
 			</div>
 
-			<div class="flex gap-4">
+			<div class="flex gap-4 flex-col sm:flex-row">
 				<div class="w-full">
 					<label for="npi" class="required">NPI Number</label>
-					<input id="npi" bind:value={form.npi} required class="input" />
+					<input
+						id="npi"
+						bind:value={form.npi}
+						required
+						inputmode="numeric"
+						pattern="\d{10}"
+						maxlength="10"
+						class="input"
+					/>
+
+					{#if form.npi && !isValidNPI(form.npi)}
+						<p class="text-sm text-red-600 mt-1">
+							Please enter a valid 10-digit NPI number (numbers only).
+						</p>
+					{/if}
 				</div>
 
 				<!-- NPI Match -->
@@ -380,7 +514,13 @@
 		<label for="agree" class="required">I agree to the terms</label>
 	</div>
 
-	<button type="submit" class="btn-primary">Submit</button>
+	<button
+		type="submit"
+		class="btn-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+		disabled={!isFormValid()}
+	>
+		Submit
+	</button>
 </form>
 
 <style>
