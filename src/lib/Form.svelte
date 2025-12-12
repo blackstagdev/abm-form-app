@@ -13,8 +13,9 @@
 		website: '',
 		taxId: '',
 		npi: '',
-		npiMatchesContact: '',
-		hasResellerLicense: '',
+		npiMatchesContact: 'yes',
+		npiAgreeMatchesContact: false,
+		hasResellerLicense: 'yes',
 		resellerPermit: '',
 		resellerCertificate: null,
 		address: '',
@@ -102,7 +103,7 @@
 </script>
 
 <form
-	class="space-y-10 max-w-3xl mx-auto"
+	class="grid gap-12 max-w-3xl mx-auto"
 	onsubmit={(e) => {
 		e.preventDefault();
 		submitForm();
@@ -115,29 +116,33 @@
 		<h2 class="section-title">Contact Information</h2>
 
 		<div class="form-grid">
-			<div>
-				<label for="firstName" class="required">First Name</label>
-				<input id="firstName" bind:value={form.firstName} required class="input" />
+			<div class="flex flex-col sm:flex-row gap-4 w-full">
+				<div class="w-full">
+					<label for="firstName" class="required">First Name</label>
+					<input id="firstName" bind:value={form.firstName} required class="input w-full" />
+				</div>
+
+				<div class="w-full">
+					<label for="lastName" class="required w-full">Last Name</label>
+					<input id="lastName" bind:value={form.lastName} required class="input w-full" />
+				</div>
+
+				<div class="w-full sm:w-1/2">
+					<label for="suffix">Suffix</label>
+					<input id="suffix" bind:value={form.suffix} class="input w-full" />
+				</div>
 			</div>
 
-			<div>
-				<label for="lastName" class="required">Last Name</label>
-				<input id="lastName" bind:value={form.lastName} required class="input" />
-			</div>
+			<div class="flex flex-col sm:flex-row gap-4">
+				<div class="w-full">
+					<label for="email" class="required">Email</label>
+					<input id="email" type="email" bind:value={form.email} required class="input w-full" />
+				</div>
 
-			<div>
-				<label for="suffix">Suffix</label>
-				<input id="suffix" bind:value={form.suffix} class="input" />
-			</div>
-
-			<div>
-				<label for="email" class="required">Email</label>
-				<input id="email" type="email" bind:value={form.email} required class="input" />
-			</div>
-
-			<div>
-				<label for="phone" class="required">Phone</label>
-				<input id="phone" type="tel" bind:value={form.phone} required class="input" />
+				<div class="w-full">
+					<label for="phone" class="required">Phone</label>
+					<input id="phone" type="tel" bind:value={form.phone} required class="input w-full" />
+				</div>
 			</div>
 		</div>
 	</section>
@@ -146,106 +151,131 @@
 	<section>
 		<h2 class="section-title">Business Profile</h2>
 
-		<div class="space-y-4">
-			<div>
-				<label for="companyName" class="required">Company Name</label>
-				<input id="companyName" bind:value={form.companyName} required class="input" />
+		<div class="grid gap-6">
+			<div class="flex gap-4">
+				<div class="w-full">
+					<label for="companyName" class="required">Company Name</label>
+					<input id="companyName" bind:value={form.companyName} required class="input" />
+				</div>
+
+				<div class="w-full">
+					<label for="businessType">Business Type</label>
+					<select id="businessType" bind:value={form.businessType} class="input">
+						<option value="Provider">Provider</option>
+						<option value="Clinic">Partner</option>
+					</select>
+				</div>
 			</div>
 
-			<div>
-				<label for="businessType">Business Type</label>
-				<select id="businessType" bind:value={form.businessType} class="input">
-					<option value="Provider">Provider</option>
-					<option value="Clinic">Partner</option>
-				</select>
+			<div class="flex gap-4">
+				<div class="w-full">
+					<label for="website" class="required">Website</label>
+					<input id="website" bind:value={form.website} required class="input" />
+				</div>
+
+				<div class="w-full">
+					<label for="taxId" class="required">Tax ID / EIN</label>
+					<input id="taxId" bind:value={form.taxId} required class="input" />
+				</div>
 			</div>
 
-			<div>
-				<label for="website" class="required">Website</label>
-				<input id="website" bind:value={form.website} required class="input" />
+			<div class="flex gap-4">
+				<div class="w-full">
+					<label for="npi" class="required">NPI Number</label>
+					<input id="npi" bind:value={form.npi} required class="input" />
+				</div>
+
+				<!-- NPI Match -->
+				<fieldset class="space-y-2 w-full">
+					<legend class="font-medium">Does the owner of the NPI match the contact?</legend>
+					<div class="flex gap-6">
+						<label class="inline-flex items-center gap-2" for="npiYes">
+							<input
+								id="npiYes"
+								type="radio"
+								bind:group={form.npiMatchesContact}
+								value="yes"
+								required
+							/>
+							<span>Yes</span>
+						</label>
+
+						<label class="inline-flex items-center gap-2" for="npiNo">
+							<input id="npiNo" type="radio" bind:group={form.npiMatchesContact} value="no" />
+							<span>No</span>
+						</label>
+					</div>
+				</fieldset>
 			</div>
 
-			<div>
-				<label for="taxId" class="required">Tax ID / EIN</label>
-				<input id="taxId" bind:value={form.taxId} required class="input" />
-			</div>
-
-			<div>
-				<label for="npi" class="required">NPI Number</label>
-				<input id="npi" bind:value={form.npi} required class="input" />
-			</div>
-
-			<!-- NPI Match -->
-			<fieldset class="space-y-2">
-				<legend class="font-medium">Does the owner of the NPI match the contact?</legend>
-				<div class="flex gap-6">
-					<label class="inline-flex items-center gap-2" for="npiYes">
+			<div class="w-full flex gap-1">
+				{#if form.npiMatchesContact === 'no'}
+					<div class="flex items-start gap-4">
 						<input
-							id="npiYes"
-							type="radio"
-							bind:group={form.npiMatchesContact}
-							value="yes"
+							id="agree"
+							type="checkbox"
+							class="mt-1.5"
+							bind:checked={form.npiAgreeMatchesContact}
 							required
 						/>
-						<span>Yes</span>
-					</label>
+						<label for="agree" class="required"
+							>I acknowledge I will be required provide written approval from the owner of the NPI
+							number prior to the account being approved</label
+						>
+					</div>
+				{/if}
+			</div>
 
-					<label class="inline-flex items-center gap-2" for="npiNo">
-						<input id="npiNo" type="radio" bind:group={form.npiMatchesContact} value="no" />
-						<span>No</span>
-					</label>
-				</div>
-			</fieldset>
+			<div class="flex flex-col md:flex-row gap-4">
+				<!-- Reseller License -->
+				<fieldset class="grid gap-8 w-full">
+					<legend class="font-medium">Does your business have a reseller’s license?</legend>
+					<div class="flex gap-6">
+						<label class="inline-flex items-center gap-2" for="resellerYes">
+							<input
+								id="resellerYes"
+								type="radio"
+								bind:group={form.hasResellerLicense}
+								value="yes"
+								required
+							/>
+							<span>Yes</span>
+						</label>
 
-			<!-- Reseller License -->
-			<fieldset class="space-y-2">
-				<legend class="font-medium">Does your business have a reseller’s license?</legend>
-				<div class="flex gap-6">
-					<label class="inline-flex items-center gap-2" for="resellerYes">
-						<input
-							id="resellerYes"
-							type="radio"
-							bind:group={form.hasResellerLicense}
-							value="yes"
-							required
-						/>
-						<span>Yes</span>
-					</label>
+						<label class="inline-flex items-center gap-2" for="resellerNo">
+							<input id="resellerNo" type="radio" bind:group={form.hasResellerLicense} value="no" />
+							<span>No</span>
+						</label>
 
-					<label class="inline-flex items-center gap-2" for="resellerNo">
-						<input id="resellerNo" type="radio" bind:group={form.hasResellerLicense} value="no" />
-						<span>No</span>
-					</label>
+						<label class="inline-flex items-center gap-2" for="resellerUnsure">
+							<input
+								id="resellerUnsure"
+								type="radio"
+								bind:group={form.hasResellerLicense}
+								value="unsure"
+							/>
+							<span>Not sure</span>
+						</label>
+					</div>
+				</fieldset>
 
-					<label class="inline-flex items-center gap-2" for="resellerUnsure">
-						<input
-							id="resellerUnsure"
-							type="radio"
-							bind:group={form.hasResellerLicense}
-							value="unsure"
-						/>
-						<span>Not sure</span>
-					</label>
-				</div>
-			</fieldset>
-
-			{#if form.hasResellerLicense === 'yes'}
-				<div>
-					<label for="resellerPermit" class="required">Reseller's Permit Number</label>
-					<input id="resellerPermit" bind:value={form.resellerPermit} required class="input" />
-				</div>
-
-				<div>
-					<label for="resellerCertificate" class="required">Upload Reseller’s Certificate</label>
-					<input
-						id="resellerCertificate"
-						type="file"
-						required
-						onchange={(e) => handleFileUpload(e, 'resellerCertificate')}
-						class="input-file"
-					/>
-				</div>
-			{/if}
+				{#if form.hasResellerLicense === 'yes'}
+					<div class="w-full">
+						<label for="resellerPermit" class="required">Reseller's Permit Number</label>
+						<input id="resellerPermit" bind:value={form.resellerPermit} required class="input" />
+					</div>
+				{/if}
+			</div>
+		</div>
+		<div class="w-full mt-4">
+			<label for="resellerCertificate" class="required">Upload Reseller’s Certificate</label>
+			<input
+				id="resellerCertificate"
+				type="file"
+				required
+				onchange={(e) => handleFileUpload(e, 'resellerCertificate')}
+				class="input-file"
+			/>
 		</div>
 	</section>
 
@@ -258,20 +288,21 @@
 				<label for="address" class="required">Address Line 1</label>
 				<input id="address" bind:value={form.address} required class="input" />
 			</div>
+			<div class="flex gap-4">
+				<div class="w-full">
+					<label for="city" class="required">City</label>
+					<input id="city" bind:value={form.city} required class="input" />
+				</div>
 
-			<div>
-				<label for="city" class="required">City</label>
-				<input id="city" bind:value={form.city} required class="input" />
-			</div>
+				<div class="w-full">
+					<label for="state" class="required">State</label>
+					<input id="state" bind:value={form.state} required class="input" />
+				</div>
 
-			<div>
-				<label for="state" class="required">State</label>
-				<input id="state" bind:value={form.state} required class="input" />
-			</div>
-
-			<div>
-				<label for="zip" class="required">Zip Code</label>
-				<input id="zip" bind:value={form.zip} required class="input" />
+				<div class="w-full">
+					<label for="zip" class="required">Zip Code</label>
+					<input id="zip" bind:value={form.zip} required class="input" />
+				</div>
 			</div>
 		</div>
 	</section>
@@ -294,10 +325,10 @@
 			</p>
 		</div>
 
-		<div>
+		<div class="mt-8 w-full relative w-full">
 			<label for="referredbySomeone" class="required">Referred by someone?</label>
 
-			<button type="button" class="select-box" onclick={() => (open = !open)}>
+			<button type="button" class="select-box w-full" onclick={() => (open = !open)}>
 				{#if form.referredBy}
 					{#each affiliateList as a}
 						{#if a.ref_code === form.referredBy}
@@ -311,7 +342,7 @@
 
 			<!-- Dropdown with search -->
 			{#if open}
-				<div class="dropdown">
+				<div class="dropdown w-full">
 					<input type="text" placeholder="Search..." bind:value={search} />
 
 					{#each filteredList as a}
@@ -323,8 +354,17 @@
 			{/if}
 		</div>
 
+		<!-- <div>
+			<h2 class="section-title">Additional Notes</h2>
+
+			<textarea id="notes" bind:value={form.notes} class="input h-24"></textarea>
+		</div> -->
+	</section>
+	<section>
 		<div>
-			<label for="notes">Additional Notes</label>
+			<h2 class="section-title">Additional Notes</h2>
+
+			<!-- <label for="notes">Additional Notes</label> -->
 			<textarea id="notes" bind:value={form.notes} class="input h-24"></textarea>
 		</div>
 	</section>
@@ -351,8 +391,8 @@
 	}
 
 	.form-grid {
-		display: grid;
-		grid-template-columns: 1fr;
+		display: flex;
+		flex-direction: column;
 		gap: 1rem;
 	}
 
