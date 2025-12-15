@@ -307,7 +307,6 @@
 						bind:value={form.npi}
 						required
 						inputmode="numeric"
-						pattern="\d{10}"
 						maxlength="10"
 						class="input"
 					/>
@@ -460,7 +459,7 @@
 		</div>
 
 		<div class="mt-8 w-full relative w-full">
-			<label for="referredbySomeone" class="required">Referred by someone?</label>
+			<label for="referredbySomeone">Referred by someone?</label>
 
 			<button type="button" class="select-box w-full" onclick={() => (open = !open)}>
 				{#if form.referredBy}
