@@ -289,6 +289,7 @@
 						required
 						placeholder="12-3456789"
 						class="input"
+						type="number"
 					/>
 
 					{#if form.taxId && !isValidEIN(form.taxId)}
@@ -304,6 +305,7 @@
 					<label for="npi" class="required">NPI Number</label>
 					<input
 						id="npi"
+						type="number"
 						bind:value={form.npi}
 						required
 						inputmode="numeric"
@@ -400,16 +402,18 @@
 				{/if}
 			</div>
 		</div>
-		<div class="w-full mt-4">
-			<label for="resellerCertificate" class="required">Upload Reseller’s Certificate</label>
-			<input
-				id="resellerCertificate"
-				type="file"
-				required
-				onchange={(e) => handleFileUpload(e, 'resellerCertificate')}
-				class="input-file"
-			/>
-		</div>
+		{#if form.hasResellerLicense === 'yes'}
+			<div class="w-full mt-4">
+				<label for="resellerCertificate" class="required">Upload Reseller’s Certificate</label>
+				<input
+					id="resellerCertificate"
+					type="file"
+					required
+					onchange={(e) => handleFileUpload(e, 'resellerCertificate')}
+					class="input-file"
+				/>
+			</div>
+		{/if}
 	</section>
 
 	<!-- Business Address -->
@@ -469,7 +473,7 @@
 						{/if}
 					{/each}
 				{:else}
-					-- Select Referrer --
+					Select Referrer
 				{/if}
 			</button>
 
@@ -608,6 +612,7 @@
 		padding: 8px;
 		cursor: pointer;
 		background: white;
+		text-align: left;
 	}
 
 	.dropdown {
